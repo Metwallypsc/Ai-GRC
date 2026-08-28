@@ -1,28 +1,41 @@
 import React from "react";
+import { prisma } from "@/lib/prisma";
 import { DataTable } from "@/components/ui/DataTable";
 import Link from "next/link";
 import { Plus, FileText } from "lucide-react";
 
-export default function BiaTemplatesPage() {
+export const dynamic = "force-dynamic";
+
+export default async function RealBiaTemplatesPage() {
+  let templates: any[] = [];
+  try {
+    templates = await prisma.bIATemplate.findMany({
+      orderBy: { createdAt: "desc" },
+    });
+  } catch (e) {
+    console.error("Failed to fetch BIA templates:", e);
+  }
+
   const columns = [
     { accessorKey: "name", header: "Template Name" },
-    { accessorKey: "industry", header: "Industry / Scope" },
     { accessorKey: "version", header: "Version" },
-    { accessorKey: "status", header: "Status" },
+    { accessorKey: "status", header: "Lifecycle Status" },
+    { accessorKey: "createdAt", header: "Created Date" },
   ];
 
-  const data = [
-    { name: "Standard Enterprise BIA Template", industry: "General Corporate", version: "v1.2", status: "Active" },
-    { name: "Financial Services Resilience Template", industry: "Banking & Finance", version: "v2.0", status: "Active" },
-    { name: "Healthcare Critical Operations Template", industry: "Healthcare & Pharma", version: "v1.0", status: "Draft" },
-  ];
+  const formattedData = templates.map((t) => ({
+    name: t.name,
+    version: `v${t.version || 1}.0`,
+    status: t.status,
+    createdAt: new Date(t.createdAt).toLocaleDateString(),
+  }));
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-slate-100">BIA Questionnaire Templates</h1>
-          <p className="text-sm text-slate-500">Configure dynamic assessment templates, sections, and scoring weights.</p>
+          <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-slate-100">BIA Questionnaire Templates (Database Connected)</h1>
+          <p className="text-sm text-slate-500">Configure dynamic assessment templates, sections, and scoring weights synchronized with Neon PostgreSQL.</p>
         </div>
         <Link
           href="/bia/templates/new"
@@ -31,7 +44,7 @@ export default function BiaTemplatesPage() {
           <Plus size={16} /> Create Template
         </Link>
       </div>
-      <DataTable columns={columns} data={data} />
+      <DataTable columns={columns} data={formattedData} />
     </div>
   );
 }
