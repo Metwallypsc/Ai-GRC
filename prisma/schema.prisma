@@ -1,16 +1,109 @@
-generator client {
-  provider = "prisma-client-js"
-}
-
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
-// Feature-based models will be added under features/*/prisma or here.
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum Role {
+  SUPER_ADMIN
+  ORG_ADMIN
+  BCM_MANAGER
+  DEPT_MANAGER
+  PROCESS_OWNER
+  VIEWER
+}
+
+enum Tier {
+  FREE
+  BUSINESS
+  ENTERPRISE
+}
+
+model Organization {
+  id            String         @id @default(uuid())
+  name          String         @unique
+  code          String         @unique
+  tier          Tier           @default(BUSINESS)
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  deletedAt     DateTime?
+  users         User[]
+  departments   Department[]
+  businessUnits BusinessUnit[]
+  processes     Process[]
+  assessments   BiaAssessment[]
+
+  @@index([code])
+}
+
 model User {
-  id        String   @id @default(uuid())
-  email     String   @unique
-  name      String?
-  createdAt DateTime @default(now())
+  id             String       @id @default(uuid())
+  email          String       @unique
+  passwordHash   String
+  name           String?
+  role           Role         @default(VIEWER)
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  deletedAt      DateTime?
+
+  @@index([organizationId])
+  @@index([email])
+}
+
+model Department {
+  id             String       @id @default(uuid())
+  name           String
+  head           String?
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  @@index([organizationId])
+}
+
+model BusinessUnit {
+  id             String       @id @default(uuid())
+  name           String
+  region         String?
+  criticality    String?
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  @@index([organizationId])
+}
+
+model Process {
+  id             String       @id @default(uuid())
+  title          String
+  owner          String?
+  rto            String?
+  rpo            String?
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  @@index([organizationId])
+}
+
+model BiaAssessment {
+  id             String       @id @default(uuid())
+  assessment     String
+  scope          String?
+  status         String?
+  completion     String?
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  @@index([organizationId])
 }
